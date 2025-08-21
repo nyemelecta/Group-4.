@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign Up • Portfolio Generator</title>
+  <link rel="stylesheet" href="main.css" />
+  <!-- Icons (Font Awesome) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+  <main class="auth-card">
+    <section class="panel">
+      <!-- Left: promo copy -->
+      <div class="side">
+        <h2 class="brand">ONLINE<br>PORTFOLIO<br>GENERATOR</h2>
+        <p class="kicker">Create a beautiful developer or designer portfolio in minutes. Pick a template, drop your work, publish—no code needed.</p>
+      </div>
+
+      <!-- Right: form -->
+      <div class="form-wrap">
+        <h2>Sign Up</h2>
+
+        <form class="form" id="signupForm" autocomplete="on">
+          <div class="input">
+            <input type="text" name="name" placeholder="Full name" required />
+            <i class="fa-regular fa-user icon" aria-hidden="true"></i>
+          </div>
+
+          <div class="input">
+            <input type="email" name="email" placeholder="Email" required />
+            <i class="fa-regular fa-envelope icon" aria-hidden="true"></i>
+          </div>
+          <p id="emailValidationMsg" class="validation-message" style="font-size: 0.85rem; margin-top: -0.5rem; margin-bottom: 0.5rem;"></p>
+
+          <div class="input">
+            <input id="spw" type="password" name="password" placeholder="Password" minlength="6" required />
+            <button class="toggle" type="button" aria-label="Show password" onclick="togglePw('spw', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+
+          <div class="input">
+            <input id="scpw" type="password" name="confirm" placeholder="Confirm password" minlength="6" required />
+            <button class="toggle" type="button" aria-label="Show password" onclick="togglePw('scpw', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+
+          <button class="btn" type="submit">Register</button>
+
+          <p class="note" style="text-align: right; margin-top: 0;">
+            Already have an account? <a href="login.html">Login</a>
+          </p>
+        </form>
+
+        <p id="smsg" class="note center" style="display:none"></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/auth-utils.js"></script>
+  <script>
+    function togglePw(id, btn){
+      const input = document.getElementById(id);
+      const i = btn.querySelector('i');
+      const isPw = input.type === 'password';
+      input.type = isPw ? 'text' : 'password';
+      i.classList.toggle('fa-eye');
+      i.classList.toggle('fa-eye-slash');
+    }
+
+    // Real-time email validation
+    const emailInput = document.querySelector('input[name="email"]');
+    const emailMsg = document.getElementById('emailValidationMsg');
+
+    let emailValidationTimeout;
+    emailInput.addEventListener('input', function() {
+      clearTimeout(emailValidationTimeout);
+      const email = this.value.trim();
+      
+      if (!email) {
+        emailMsg.textContent = '';
+        emailMsg.style.color = '';
+        return;
+      }
+
+      emailValidationTimeout = setTimeout(() => {
+        if (!AuthUtils.isValidEmail(email)) {
+          emailMsg.textContent = 'Please enter a valid email address';
+          emailMsg.style.color = 'var(--error)';
+        } else if (AuthUtils.emailExists(email)) {
+          emailMsg.textContent = 'This email is already registered';
+          emailMsg.style.color = 'var(--error)';
+        } else {
+          emailMsg.textContent = 'Email available';
+          emailMsg.style.color = 'var(--success)';
+        }
+      }, 500);
+    });
+
+    // Handle signup form submission
+    document.getElementById('signupForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      
+      const email = document.querySelector('input[name="email"]').value.trim();
+      const pw = document.getElementById('spw').value.trim();
+      const cpw = document.getElementById('scpw').value.trim();
+      const msg = document.getElementById('smsg');
+      
+      // Check rate limiting
+      if (!AuthUtils.rateLimiter.canAttempt(email)) {
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'Too many registration attempts. Please try again later.';
+        return;
+      }
+      
+      // Validate email format
+      if (!AuthUtils.isValidEmail(email)) {
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'Please enter a valid email address.';
+        return;
+      }
+      
+      // Check for duplicate email
+      if (AuthUtils.emailExists(email)) {
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'An account with this email already exists.';
+        AuthUtils.rateLimiter.recordAttempt(email);
+        return;
+      }
+      
+      if(pw !== cpw){
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'Passwords do not match.';
+        return;
+      }
+      
+      const formData = new FormData(this);
+      const name = formData.get('name').trim();
+      const password = formData.get('password').trim();
+      
+      // Create new user
+      const newUser = {
+        name: name,
+        email: email,
+        password: password
+      };
+      
+      // Add user using AuthUtils
+      if (AuthUtils.addUser(newUser)) {
+        // Auto-login after signup
+        const user = AuthUtils.getUserByEmail(email);
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          loginTime: new Date().toISOString()
+        }));
+        
+        // Redirect to dashboard
+        window.location.href = 'dashboard.html';
+      } else {
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'Error creating account. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>

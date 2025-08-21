@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login • Portfolio Generator</title>
+  <link rel="stylesheet" href="main.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="index.html">
+</head>
+<body>
+
+  <main class="auth-card">
+    <section class="panel">
+      <!-- Left: form -->
+      <div class="form-wrap">
+        <h2>Login</h2>
+
+        <form class="form" id="loginForm" autocomplete="on">
+          <div class="input">
+            <input type="text" name="user" placeholder="Email or username" required />
+            <i class="fa-regular fa-user icon" aria-hidden="true"></i>
+          </div>
+
+          <div class="input">
+            <input id="lpw" type="password" name="password" placeholder="Password" required />
+            <button class="toggle" type="button" aria-label="Show password" onclick="togglePw('lpw', this)">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+
+          <div class="helper">
+            <label><input type="checkbox" id="remember"> Remember me</label>
+            <a href="#" id="forgotPasswordLink">Forgot password?</a>
+          </div>
+
+          <button class="btn" type="submit">Login</button>
+
+          <p class="note center">Don’t have an account? <a href="index.html">Sign Up</a></p>
+        </form>
+
+        <p id="lmsg" class="note center" style="display:none"></p>
+      </div>
+
+      <!-- Right: promo copy -->
+      <div class="side">
+        <h2 class="brand" style="text-align:right">WELCOME<br>TO ONLINE PORTFOLIO<br>WEBSITE GENERATOR</h2>
+        <p class="kicker" style="text-align:right">Hi, here you will get all kinds of stuff — or switch text to fit your portfolio product.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Reset Password</h2>
+      <p>Enter your email address and we'll send you instructions to reset your password.</p>
+      
+      <form id="forgotPasswordForm" class="form">
+        <div class="input">
+          <input type="email" id="resetEmail" placeholder="Enter your email" required />
+          <i class="fa-regular fa-envelope icon" aria-hidden="true"></i>
+        </div>
+        
+        <button type="submit" class="btn">Send Reset Instructions</button>
+      </form>
+      
+      <p id="resetMessage" class="note center" style="display:none; margin-top: 1rem;"></p>
+    </div>
+  </div>
+
+  <script>
+    function togglePw(id, btn){
+      const input = document.getElementById(id);
+      const i = btn.querySelector('i');
+      const isPw = input.type === 'password';
+      input.type = isPw ? 'text' : 'password';
+      i.classList.toggle('fa-eye');
+      i.classList.toggle('fa-eye-slash');
+    }
+
+    // Handle login form submission
+    document.getElementById('loginForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const username = formData.get('user').trim();
+      const password = formData.get('password').trim();
+      
+      // Demo authentication - in real app, this would be an API call
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const user = users.find(u => 
+        (u.email === username || u.username === username) && u.password === password
+      );
+      
+      if (user) {
+        // Store current user in localStorage
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          loginTime: new Date().toISOString()
+        }));
+        
+        // Redirect to dashboard
+        window.location.href = 'dashboard.html';
+      } else {
+        const msg = document.getElementById('lmsg');
+        msg.style.display='block';
+        msg.style.color='var(--error)';
+        msg.textContent = 'Invalid email/username or password.';
+      }
+    });
+
+    // Forgot Password Modal Functionality
+    const modal = document.getElementById('forgotPasswordModal');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const closeBtn = document.querySelector('.close');
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    const resetMessage = document.getElementById('resetMessage');
+
+    // Open modal when forgot password link is clicked
+    forgotPasswordLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      modal.style.display = 'block';
+      resetMessage.style.display = 'none';
+      document.getElementById('resetEmail').value = '';
+    });
+
+    // Close modal when X is clicked
+    closeBtn.addEventListener('click', function() {
+      modal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside of it
+    window.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+
+    // Handle forgot password form submission
+    forgotPasswordForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('resetEmail').value.trim();
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      const user = users.find(u => u.email === email);
+      
+      if (user) {
+        // In a real app, this would send an email with reset instructions
+        // For demo purposes, we'll just show a success message
+        resetMessage.style.display = 'block';
+        resetMessage.style.color = 'var(--success)';
+        resetMessage.textContent = 'Password reset instructions have been sent to your email.';
+        
+        // Simulate sending email (remove in production)
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 3000);
+      } else {
+        resetMessage.style.display = 'block';
+        resetMessage.style.color = 'var(--error)';
+        resetMessage.textContent = 'No account found with this email address.';
+      }
+    });
+  </script>
+
+  <style>
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: var(--bg);
+      padding: 2rem;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .close {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .close:hover {
+      color: var(--primary);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    .modal-content p {
+      margin-bottom: 1.5rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .modal-content .form {
+      margin-top: 0;
+    }
+
+    .modal-content .btn {
+      width: 100%;
+      margin-top: 1rem;
+    }
+  </style>
+</body>
+</html>
